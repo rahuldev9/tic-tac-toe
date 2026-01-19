@@ -9,7 +9,6 @@ import Popup from "@/components/Popup";
 import Winnerpopup from "@/components/Winnerpopup";
 
 import GameHeader from "../components/GameHeader";
-import RoomInfo from "../components/RoomInfo";
 import PlayersPanel from "../components/PlayersPanel";
 import TurnIndicator from "../components/TurnIndicator";
 import GameActions from "../components/GameActions";
@@ -33,7 +32,7 @@ export default function StartPage() {
   const [playerSymbol, setPlayerSymbol] = useState<"X" | "O" | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [players, setPlayers] = useState<any[]>([]);
-  const [input, setInput] = useState(false);
+
   const [roomToJoin, setRoomToJoin] = useState("");
   const [gameStatus, setGameStatus] = useState("");
   const [winmsg, setWinmsg] = useState("");
@@ -58,6 +57,16 @@ export default function StartPage() {
     socket.on("roomCreated", (id: string) => {
       setRoomId(id);
       setGameStatus("Waiting for a friend...");
+      const existingUser = localStorage.getItem("user");
+      const user = existingUser ? JSON.parse(existingUser) : {};
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...user,
+          gameId: id,
+        }),
+      );
     });
 
     socket.on("startGame", ({ creatorId, players }) => {
@@ -141,18 +150,17 @@ export default function StartPage() {
 
       <div className="mx-auto max-w-md px-4 py-6">
         <GameHeader gameStarted={gameStarted} gameOver={gameOver} />
-        <RoomInfo roomId={roomId} />
+
         <PlayersPanel players={players} />
         <TurnIndicator playerSymbol={playerSymbol} isMyTurn={isMyTurn} />
 
         <GameActions
           gameStarted={gameStarted}
-          input={input}
+          roomCode={roomId}
           roomToJoin={roomToJoin}
           setRoomToJoin={setRoomToJoin}
           createRoom={createRoom}
           joinRoom={joinRoom}
-          showJoinInput={() => setInput(true)}
         />
 
         {roomId && gameboard && <GameBoard board={board} makeMove={makeMove} />}
