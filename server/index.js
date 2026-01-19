@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000"], // Next.js dev
+    origin: ["https://tic-tac-toe-theta-six-56.vercel.app"], // Next.js dev
     methods: ["GET", "POST"],
   },
 });
@@ -176,3 +176,4 @@ function checkWinner(roomId) {
 server.listen(4000, () => {
   console.log("Socket.IO server running on http://localhost:4000");
 });
+
