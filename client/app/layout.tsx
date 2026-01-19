@@ -99,6 +99,10 @@ export default async function RootLayout({
           />
         )}
       </head>
+      <meta
+        name="google-site-verification"
+        content="ipHbApTsNCMMhHn91DcftOdV-fdz6Bsx_qDN0GkoUdg"
+      />
       <body className="antialiased">{children}</body>
     </html>
   );
