@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://tic-tac-toe-theta-six-56.vercel.app
+
+# Sitemaps
+Sitemap: https://tic-tac-toe-theta-six-56.vercel.app/sitemap.xml

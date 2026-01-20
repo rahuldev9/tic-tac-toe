@@ -3,7 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { headers } from "next/headers";
 import { seoConfig, resolveSeoKey } from "@/lib/Seo-config";
-
+export const dynamic = "force-dynamic";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -15,9 +15,6 @@ const outfit = Outfit({
   variable: "--font-outfit",
   display: "swap",
 });
-
-// Force dynamic rendering to read headers
-export const dynamic = "force-dynamic";
 
 // --------------------------------------------------------------
 // ⭐ Dynamic Metadata - Read pathname from middleware header
