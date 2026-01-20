@@ -63,7 +63,7 @@ export default function StartPage() {
   useEffect(() => {
     socket.on("roomCreated", (id: string) => {
       setRoomId(id);
-      setGameStatus("Waiting for a friend...");
+      // setGameStatus("Waiting for a friend...");
       const existingUser = localStorage.getItem("user");
       const user = existingUser ? JSON.parse(existingUser) : {};
 

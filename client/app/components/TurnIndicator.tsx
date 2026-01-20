@@ -34,12 +34,13 @@ export default function TurnIndicator({
                 isMyTurn ? "text-green-400" : "text-red-400"
               }`}
             >
-              <p>{`${nextPlayerName}'s turn`}</p>
-              {/* <p>
-                {isMyTurn
-                  ? "Your turn"
-                  : `${nextPlayerName ?? "Opponent"}'s turn`}
-              </p> */}
+              <p>
+                {nextPlayerName
+                  ? `${nextPlayerName}'s turn`
+                  : isMyTurn
+                    ? "Your turn"
+                    : "Opponent's turn"}
+              </p>
             </span>
           </div>
         </div>

@@ -73,11 +73,11 @@ export default function ChatWidget({
                     : "bg-zinc-800 text-zinc-100"
                 }`}
               >
-                {!me && (
+                {/* {!me && (
                   <p className="mb-1 text-xs font-semibold text-zinc-400">
                     {m.player}
                   </p>
-                )}
+                )} */}
 
                 <p className="break-words">{m.text}</p>
 

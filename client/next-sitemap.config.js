@@ -10,6 +10,7 @@ module.exports = {
         changefreq: "daily",
         priority: 1.0,
       },
+      { loc: "/start", changefreq: "daily", priority: 0.8 },
     ];
   },
 };

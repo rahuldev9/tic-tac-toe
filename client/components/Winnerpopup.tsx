@@ -13,7 +13,7 @@ export default function Winnerpopup({
   player,
   onClose,
 }: Props) {
-  const isDraw = winstate === "draw";
+  const isDraw = winstate === "Draw";
   const isWinner = winstate === player;
 
   return (
