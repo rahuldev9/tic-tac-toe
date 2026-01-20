@@ -23,10 +23,10 @@ export default function Winnerpopup({
           {gamestatus
             ? gamestatus
             : isDraw
-            ? "It's a Draw!"
-            : isWinner
-            ? "You Win 🎉"
-            : "You Lose 😢"}
+              ? "It's a Draw!"
+              : isWinner
+                ? "You Win 🎉"
+                : "You Lose 😢"}
         </h2>
 
         {!gamestatus && !isDraw && (
@@ -34,13 +34,21 @@ export default function Winnerpopup({
             Winner: <strong>{winstate}</strong>
           </p>
         )}
-
-        <button
-          onClick={onClose}
-          className="mt-6 w-full rounded-lg bg-green-500 py-2 font-semibold text-black"
-        >
-          Close
-        </button>
+        {gamestatus === "Opponent left the game." ? (
+          <button
+            onClick={onClose}
+            className="mt-6 w-full rounded-lg bg-green-500 py-2 font-semibold text-black"
+          >
+            Close
+          </button>
+        ) : (
+          <button
+            onClick={onClose}
+            className="mt-6 w-full rounded-lg bg-green-500 py-2 font-semibold text-black"
+          >
+            Play Again
+          </button>
+        )}
       </div>
     </div>
   );

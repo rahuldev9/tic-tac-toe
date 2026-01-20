@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import io from "socket.io-client";
 import { useRouter } from "next/navigation";
-
+import { MessageCircle } from "lucide-react";
 import Nav from "@/components/Nav";
 import Popup from "@/components/Popup";
 import Winnerpopup from "@/components/Winnerpopup";
@@ -40,6 +40,10 @@ export default function StartPage() {
   // Chat
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
+  const lastMessage = messages.at(-1);
+
+  const lastMessagePlayer = lastMessage?.player;
+  const lastMessageText = lastMessage?.text;
   const [messageInput, setMessageInput] = useState("");
 
   const user =
@@ -47,9 +51,12 @@ export default function StartPage() {
       ? JSON.parse(localStorage.getItem("user") || "{}")
       : {};
 
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+
   const playerName = user?.name || "Guest";
   const gender = user?.gender;
   const profile = user?.image;
+  const currentPlayerName = players.find((p) => p.id === currentPlayerId)?.name;
 
   /* ---------------- SOCKET ---------------- */
 
@@ -82,6 +89,7 @@ export default function StartPage() {
 
     socket.on("moveMade", ({ board, currentPlayer }) => {
       setBoard(board);
+      setCurrentPlayerId(currentPlayer);
       setIsMyTurn(currentPlayer === socket.id);
     });
 
@@ -89,6 +97,17 @@ export default function StartPage() {
       setGameOver(true);
       setWinmsg(winner);
       setWinnerPopup(true);
+    });
+    socket.on("gameReset", ({ board, currentPlayer }) => {
+      setBoard(board);
+      setGameOver(false);
+      setWinnerPopup(false);
+      setWinmsg("");
+      setGameStatus("");
+      setGameStarted(true);
+      setGameboard(true);
+      setCurrentPlayerId(currentPlayer);
+      setIsMyTurn(currentPlayer === socket.id);
     });
 
     socket.on("opponentLeft", () => {
@@ -125,6 +144,11 @@ export default function StartPage() {
     }
   };
 
+  const resetGame = () => {
+    if (!roomId) return;
+    socket.emit("resetGame", roomId);
+  };
+
   const sendMessage = () => {
     if (!messageInput.trim()) return;
     socket.emit("sendMessage", {
@@ -138,21 +162,40 @@ export default function StartPage() {
   return (
     <main className="min-h-screen bg-black text-white">
       <Nav gameStarted={gameStarted} />
-
       {gameStarted && (
         <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 rounded-full bg-green-500 p-4 text-black"
+          onClick={() => setChatOpen(!chatOpen)}
+          aria-label="Open chat"
+          className="
+      fixed bottom-6 right-6 z-50
+      flex items-center justify-center
+      h-14 w-14 rounded-full
+      bg-green-500 text-black
+      shadow-lg shadow-green-500/40
+      transition-all duration-300 ease-out
+      hover:scale-110 hover:bg-green-400
+      active:scale-95
+    "
         >
-          💬
+          <MessageCircle className="h-7 w-7" />
         </button>
       )}
 
       <div className="mx-auto max-w-md px-4 py-6">
-        <GameHeader gameStarted={gameStarted} gameOver={gameOver} />
+        {/* <GameHeader gameStarted={gameStarted} gameOver={gameOver} /> */}
 
-        <PlayersPanel players={players} />
-        <TurnIndicator playerSymbol={playerSymbol} isMyTurn={isMyTurn} />
+        <PlayersPanel
+          players={players}
+          lastmessage={lastMessage}
+          playername={lastMessagePlayer}
+          isChatOpen={chatOpen}
+          TiggerChat={() => setChatOpen(true)}
+        />
+        <TurnIndicator
+          playerSymbol={playerSymbol}
+          isMyTurn={isMyTurn}
+          nextPlayerName={currentPlayerName}
+        />
 
         <GameActions
           gameStarted={gameStarted}
@@ -188,6 +231,7 @@ export default function StartPage() {
           onClose={() => {
             setWinnerPopup(false);
             if (gameStatus === "Opponent left the game.") router.push("/");
+            resetGame();
           }}
         />
       )}

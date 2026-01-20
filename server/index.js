@@ -20,7 +20,7 @@ const io = new Server(server, {
 const rooms = {}; // roomId -> room data
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  // console.log("User connected:", socket.id);
 
   /* ---------------- CREATE ROOM ---------------- */
   socket.on("createRoom", (playerName, gender, profile) => {
@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     socket.emit("roomCreated", roomId);
 
-    console.log(`Room ${roomId} created by ${playerName}`);
+    // console.log(`Room ${roomId} created by ${playerName}`);
   });
 
   /* ---------------- JOIN ROOM ---------------- */
@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
       players: room.players,
     });
 
-    console.log(`${playerName} joined room ${roomId}`);
+    // console.log(`${playerName} joined room ${roomId}`);
   });
 
   /* ---------------- MAKE MOVE ---------------- */
