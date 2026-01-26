@@ -12,7 +12,7 @@ const FRONTENDURL = process.env.NEXT_PUBLIC_FRONTEND_URL;
 
 const io = new Server(server, {
   cors: {
-    origin: [`${FRONTENDURL}`], // Next.js dev
+    origin: "*", // Next.js dev
     methods: ["GET", "POST"],
   },
 });
@@ -128,6 +128,24 @@ io.on("connection", (socket) => {
     room.chat.push(chatMessage);
 
     io.to(roomId).emit("receiveMessage", chatMessage);
+  });
+  socket.on("sendEmoji", ({ roomId, emoji, player }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    const reaction = { player, emoji };
+
+    io.to(roomId).emit("receiveEmoji", reaction);
+  });
+
+  socket.on("ready", (roomId) => {
+    socket.to(roomId).emit("ready");
+  });
+
+  socket.on("video-frame", ({ roomId, frame }) => {
+    // broadcast to others in room
+
+    socket.to(roomId).emit("video-frame", frame);
   });
 
   /* ---------------- DISCONNECT ---------------- */
