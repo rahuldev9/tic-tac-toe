@@ -12,7 +12,7 @@ export default function VideoSender({ socket, roomId }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
   const [isVideoReady, setIsVideoReady] = useState(false);
 
   useEffect(() => {
@@ -20,27 +20,17 @@ export default function VideoSender({ socket, roomId }: Props) {
 
     const initCamera = async () => {
       try {
-        // Check if API is available
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error(
-            "Camera API not available. Please use HTTPS or check browser compatibility.",
-          );
-        }
-
-        // Mobile-optimized constraints
-        const constraints = {
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
             width: { ideal: 640 },
             height: { ideal: 480 },
-            frameRate: { ideal: 15, max: 30 },
+            frameRate: { ideal: 15, max: 15 },
           },
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        });
 
         if (!mounted) {
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((t) => t.stop());
           return;
         }
 
@@ -48,28 +38,17 @@ export default function VideoSender({ socket, roomId }: Props) {
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-
-          videoRef.current.onloadedmetadata = () => {
-            if (mounted && videoRef.current) {
-              videoRef.current
-                .play()
-                .then(() => {
-                  setIsVideoReady(true);
-                })
-                .catch((err) => {
-                  console.error("Video play error:", err);
-                  setError("Failed to play video");
-                });
+          videoRef.current.onloadedmetadata = async () => {
+            try {
+              await videoRef.current?.play();
+              setIsVideoReady(true);
+            } catch {
+              setError("Video play failed");
             }
           };
         }
-      } catch (err) {
-        console.error("Camera access error:", err);
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Unknown camera error");
-        }
+      } catch (err: any) {
+        setError(err.message || "Camera error");
       }
     };
 
@@ -77,9 +56,7 @@ export default function VideoSender({ socket, roomId }: Props) {
 
     return () => {
       mounted = false;
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
@@ -88,11 +65,10 @@ export default function VideoSender({ socket, roomId }: Props) {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    if (video.videoWidth === 0 || video.videoHeight === 0) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    if (!video.videoWidth || !video.videoHeight) return;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -102,49 +78,28 @@ export default function VideoSender({ socket, roomId }: Props) {
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-
-        socket.emit("video-frame", {
+        socket.volatile.emit("video-frame", {
           roomId,
           frame: blob,
         });
       },
       "image/jpeg",
-      0.6,
+      0.4,
     );
   };
 
+  // 🔥 FIX: send at fixed FPS (NO requestAnimationFrame)
   useEffect(() => {
     if (!isVideoReady) return;
 
-    let active = true;
-    let frameId: number;
+    const FPS = 12;
+    const interval = setInterval(sendFrame, 1000 / FPS);
 
-    const loop = () => {
-      if (!active) return;
-      sendFrame();
-      frameId = requestAnimationFrame(loop);
-    };
-
-    loop();
-
-    return () => {
-      active = false;
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
-    };
+    return () => clearInterval(interval);
   }, [roomId, isVideoReady]);
 
   if (error) {
-    return (
-      <div className="p-4 bg-red-50 text-red-600 rounded text-sm">
-        <p className="font-semibold">Camera Error:</p>
-        <p>{error}</p>
-        <p className="mt-2 text-xs">
-          Make sure you're using HTTPS and have granted camera permissions.
-        </p>
-      </div>
-    );
+    return <div className="text-red-600 text-sm">{error}</div>;
   }
 
   return (

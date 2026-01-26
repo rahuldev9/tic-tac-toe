@@ -143,9 +143,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("video-frame", ({ roomId, frame }) => {
-    // broadcast to others in room
-
-    socket.to(roomId).emit("video-frame", frame);
+    // 🔥 volatile = no buffering, no lag buildup
+    socket.to(roomId).volatile.emit("video-frame", frame);
   });
 
   /* ---------------- DISCONNECT ---------------- */
