@@ -138,7 +138,6 @@ export default function StartPage() {
       socket.removeAllListeners();
     };
   }, []);
-  /* ---------------- ACTIONS ---------------- */
 
   const createRoom = () => {
     socket.emit("createRoom", playerName, gender, profile);
@@ -208,13 +207,13 @@ export default function StartPage() {
       )}
 
       <div className="mx-auto max-w-md px-4 py-6">
-        {gameStarted && (
+        {/* {gameStarted && (
           <>
             {" "}
             <VideoSender socket={socket} roomId={roomId} />
             <LiveViewer socket={socket} roomId={roomId} />
           </>
-        )}
+        )} */}
 
         <PlayersPanel
           players={players}

@@ -142,10 +142,11 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ready");
   });
 
-  socket.on("video-frame", ({ roomId, frame }) => {
-    // 🔥 volatile = no buffering, no lag buildup
-    socket.to(roomId).volatile.emit("video-frame", frame);
-  });
+  // socket.on("video-frame", ({ roomId, frame }) => {
+  //   // 🔥 volatile = no buffering, no lag buildup
+  //   socket.to(roomId).volatile.emit("video-frame", frame);
+  // });
+
   socket.on("offer", ({ roomId, offer }) => {
     socket.to(roomId).emit("offer", { offer });
   });
