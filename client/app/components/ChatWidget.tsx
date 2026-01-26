@@ -9,6 +9,7 @@ type Message = {
 
 type Props = {
   open: boolean;
+
   setOpen: (v: boolean) => void;
   messages: Message[];
   messageInput: string;

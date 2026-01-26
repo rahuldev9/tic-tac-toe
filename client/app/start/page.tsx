@@ -14,10 +14,18 @@ import TurnIndicator from "../components/TurnIndicator";
 import GameActions from "../components/GameActions";
 import GameBoard from "../components/GameBoard";
 import ChatWidget from "../components/ChatWidget";
+import EmojiWidget from "../components/EmojiWidget";
+import VideoChat from "../components/VideoChat";
+import VideoSender from "../components/VideoSender";
+import LiveViewer from "../components/LiveViewer";
 
 const BACKENDURL = process.env.NEXT_PUBLIC_BACKENDURL;
 
 const socket = io(`${BACKENDURL}`);
+
+// const socket = io("http://192.168.0.106:4000", {
+//   transports: ["websocket"],
+// });
 
 export default function StartPage() {
   const router = useRouter();
@@ -40,6 +48,12 @@ export default function StartPage() {
   // Chat
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
+
+  const [Emojis, setEmojis] = useState<any[]>([]);
+  const [lastReaction, setLastReaction] = useState<
+    { player: string; emoji: string } | undefined
+  >();
+
   const lastMessage = messages.at(-1);
 
   const lastMessagePlayer = lastMessage?.player;
@@ -116,9 +130,12 @@ export default function StartPage() {
     });
 
     socket.on("receiveMessage", (msg) => setMessages((prev) => [...prev, msg]));
+    socket.on("receiveEmoji", (reaction) => {
+      setLastReaction(reaction);
+    });
 
     return () => {
-      socket.removeAllListeners(); // ✅ now returns void
+      socket.removeAllListeners();
     };
   }, []);
   /* ---------------- ACTIONS ---------------- */
@@ -158,6 +175,16 @@ export default function StartPage() {
     });
     setMessageInput("");
   };
+  const sendEmoji = (emoji: string) => {
+    socket.emit("sendEmoji", {
+      roomId,
+      player: playerName,
+      emoji, // ✅ send emoji only
+    });
+
+    // update local state immediately
+    setLastReaction({ player: playerName, emoji });
+  };
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -183,14 +210,28 @@ export default function StartPage() {
 
       <div className="mx-auto max-w-md px-4 py-6">
         {/* <GameHeader gameStarted={gameStarted} gameOver={gameOver} /> */}
+        {/* <VideoChat
+          socket={socket}
+          roomId={roomId}
+          isCreator={playerSymbol === "X"} // creator = X
+        /> */}
+        {gameStarted && (
+          <>
+            {" "}
+            <VideoSender socket={socket} roomId={roomId} />
+            <LiveViewer socket={socket} />
+          </>
+        )}
 
         <PlayersPanel
           players={players}
+          emoji={lastReaction}
           lastmessage={lastMessage}
           playername={lastMessagePlayer}
           isChatOpen={chatOpen}
           TiggerChat={() => setChatOpen(true)}
         />
+        {gameStarted && <EmojiWidget sendEmoji={sendEmoji} />}
         <TurnIndicator
           playerSymbol={playerSymbol}
           isMyTurn={isMyTurn}
