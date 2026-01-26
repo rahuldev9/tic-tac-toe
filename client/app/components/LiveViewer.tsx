@@ -5,32 +5,52 @@ import { Socket } from "socket.io-client";
 
 type Props = {
   socket: Socket;
+  roomId: string;
 };
 
-export default function LiveViewer({ socket }: Props) {
-  const imgRef = useRef<HTMLImageElement>(null);
-  const lastUrl = useRef<string | null>(null);
+export default function VideoReceiver({ socket, roomId }: Props) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
 
   useEffect(() => {
-    socket.on("video-frame", (frame: ArrayBuffer) => {
-      if (lastUrl.current) {
-        URL.revokeObjectURL(lastUrl.current);
-      }
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
 
-      const blob = new Blob([frame], { type: "image/jpeg" });
-      const url = URL.createObjectURL(blob);
-      lastUrl.current = url;
+    pcRef.current = pc;
 
-      if (imgRef.current) {
-        imgRef.current.src = url;
+    pc.ontrack = (e) => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = e.streams[0];
       }
+    };
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("ice-candidate", {
+          roomId,
+          candidate: e.candidate,
+        });
+      }
+    };
+
+    socket.on("offer", async ({ offer }) => {
+      await pc.setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socket.emit("answer", { roomId, answer });
+    });
+
+    socket.on("ice-candidate", async ({ candidate }) => {
+      await pc.addIceCandidate(candidate);
     });
 
     return () => {
-      socket.off("video-frame");
-      if (lastUrl.current) URL.revokeObjectURL(lastUrl.current);
+      socket.off("offer");
+      socket.off("ice-candidate");
     };
-  }, []);
+  }, [socket, roomId]);
 
-  return <img ref={imgRef} width={160} />;
+  return <video ref={videoRef} autoPlay playsInline className="w-64" />;
 }

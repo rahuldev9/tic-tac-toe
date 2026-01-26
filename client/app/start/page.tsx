@@ -179,10 +179,9 @@ export default function StartPage() {
     socket.emit("sendEmoji", {
       roomId,
       player: playerName,
-      emoji, // ✅ send emoji only
+      emoji,
     });
 
-    // update local state immediately
     setLastReaction({ player: playerName, emoji });
   };
 
@@ -209,13 +208,11 @@ export default function StartPage() {
       )}
 
       <div className="mx-auto max-w-md px-4 py-6">
-        {/* <GameHeader gameStarted={gameStarted} gameOver={gameOver} /> */}
-
         {gameStarted && (
           <>
             {" "}
             <VideoSender socket={socket} roomId={roomId} />
-            <LiveViewer socket={socket} />
+            <LiveViewer socket={socket} roomId={roomId} />
           </>
         )}
 

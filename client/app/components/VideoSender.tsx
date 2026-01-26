@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 
 type Props = {
@@ -10,109 +10,65 @@ type Props = {
 
 export default function VideoSender({ socket, roomId }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [error, setError] = useState("");
-  const [isVideoReady, setIsVideoReady] = useState(false);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
+  const start = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: true,
+    });
 
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            frameRate: { ideal: 15, max: 15 },
-          },
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+
+    pcRef.current = pc;
+
+    // Add tracks
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+    // ICE candidates
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("ice-candidate", {
+          roomId,
+          candidate: e.candidate,
         });
-
-        if (!mounted) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-
-        streamRef.current = stream;
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = async () => {
-            try {
-              await videoRef.current?.play();
-              setIsVideoReady(true);
-            } catch {
-              setError("Video play failed");
-            }
-          };
-        }
-      } catch (err: any) {
-        setError(err.message || "Camera error");
       }
     };
 
-    initCamera();
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
 
-    return () => {
-      mounted = false;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-
-  const sendFrame = () => {
-    if (!videoRef.current || !canvasRef.current || !isVideoReady) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    if (!video.videoWidth || !video.videoHeight) return;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    ctx.drawImage(video, 0, 0);
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        socket.volatile.emit("video-frame", {
-          roomId,
-          frame: blob,
-        });
-      },
-      "image/jpeg",
-      0.4,
-    );
+    socket.emit("offer", { roomId, offer });
   };
 
-  // 🔥 FIX: send at fixed FPS (NO requestAnimationFrame)
   useEffect(() => {
-    if (!isVideoReady) return;
+    socket.on("answer", async ({ answer }) => {
+      await pcRef.current?.setRemoteDescription(answer);
+    });
 
-    const FPS = 12;
-    const interval = setInterval(sendFrame, 1000 / FPS);
+    socket.on("ice-candidate", async ({ candidate }) => {
+      await pcRef.current?.addIceCandidate(candidate);
+    });
 
-    return () => clearInterval(interval);
-  }, [roomId, isVideoReady]);
-
-  if (error) {
-    return <div className="text-red-600 text-sm">{error}</div>;
-  }
+    return () => {
+      socket.off("answer");
+      socket.off("ice-candidate");
+    };
+  }, [socket]);
 
   return (
     <div>
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        width={160}
-        className="rounded"
-      />
-      <canvas ref={canvasRef} hidden />
+      <button onClick={start} className="px-4 py-2 bg-green-500 rounded">
+        Start Camera
+      </button>
+
+      <video ref={videoRef} autoPlay muted playsInline className="w-64" />
     </div>
   );
 }
