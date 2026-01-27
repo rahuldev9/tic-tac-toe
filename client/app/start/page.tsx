@@ -23,9 +23,7 @@ const BACKENDURL = process.env.NEXT_PUBLIC_BACKENDURL;
 
 const socket = io(`${BACKENDURL}`);
 
-// const socket = io("http://192.168.0.106:4000", {
-//   transports: ["websocket"],
-// });
+
 
 export default function StartPage() {
   const router = useRouter();
